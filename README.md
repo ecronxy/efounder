@@ -1,88 +1,115 @@
-# ton-vanity
+<p align="center">
+  <img src="docs/banner.svg" alt="eFounder" width="720">
+</p>
 
-Generate TON wallet addresses with a pattern you choose (vanity addresses), **locally**. The result is a standard 24-word seed phrase — import it into Tonkeeper or any TON wallet and use it like any other wallet.
+<p align="center">
+  Vanity TON wallet addresses, generated locally.<br>
+  A normal 24-word seed phrase that imports into Tonkeeper, with the address ending you want.
+</p>
 
-Everything happens on your machine: no servers, no network requests, the seed phrase never leaves the process.
+<p align="center">
+  by <a href="https://ecronx.t.me">ecronx.t.me</a>
+</p>
 
-## How it works
+---
 
-A TON address is derived from the wallet's public key, so the only way to get a specific ending is brute force: draw random 24-word phrases, derive the wallet v4 r2 address, check the pattern.
+```
+$ efounder moka
 
-Two properties of TON make this slower than Ethereum-style vanity generation:
+  wallet version:       W5
+  address (Tonkeeper):  UQ…moka
+```
 
-- **probabilistic checksum** — only ~1 of 256 random phrases is a *valid* TON mnemonic (`is_basic_seed` in tonlib), so ~255 of 256 draws are discarded before the expensive key derivation;
-- **PBKDF2** — every surviving candidate costs PBKDF2-HMAC-SHA512 with 100,000 iterations, exactly as in tonlib and Tonkeeper.
-
-The generated wallet is the standard **v4 r2** contract (`walletId 698983191`) — what Tonkeeper uses when you import a 24-word seed. Patterns are matched against the **non-bounceable `UQ...`** form, which is what Tonkeeper displays.
-
-The runtime is dependency-free (Node stdlib only) and is verified byte-for-byte against `@ton/crypto`, `@ton/core` and `@ton/ton` in the reference test.
+- **Local.** No servers, no network requests. The seed phrase never leaves your machine.
+- **Tonkeeper-compatible.** Standard 24-word mnemonic, standard wallet contracts, verified byte-for-byte against `@ton/crypto` and `@ton/ton`.
+- **Fast on a plain CPU.** AVX2 core computes 4 phrases at once, and every phrase is checked as 4 wallet versions.
 
 ## Install
 
-Requires Node.js >= 18. Nothing to install for the runtime.
+Requires Node.js 18+.
 
 ```bash
-# from the project folder:
-node bin/ton-vanity.mjs --help
-# or make it a global command:
-npm i -g . && ton-vanity --help
+git clone https://github.com/ecronxy/efounder
+cd efounder
+npm run build      # optional: native AVX2 core, ~4x faster (gcc or clang + OpenSSL headers)
+npm i -g .         # optional: the `efounder` command everywhere
 ```
+
+Without the native core the CLI falls back to pure JS with zero runtime dependencies.
 
 ## Usage
 
 ```bash
-ton-vanity sexy                      # suffix, case-insensitive (default)
-ton-vanity --suffix sexy --case-sensitive
-ton-vanity -p UQsexy                 # prefix instead of suffix
-ton-vanity -s money -t 8             # limit worker threads
-ton-vanity -s sexy --json            # machine-readable single-line result
+efounder sexy                     # address ends with "sexy", any case
+efounder sexy --case-sensitive    # exactly "sexy"
+efounder -p UQCool                # address starts with "UQCool"
+efounder -s money -t 4            # use 4 threads
+efounder -s sexy --json           # one JSON line, for scripts
 ```
 
-Options:
-
-| flag | meaning |
+| option | meaning |
 |---|---|
-| `-s, --suffix <text>` | address must end with this |
-| `-p, --prefix <text>` | address must start with this (right after `UQ`) |
-| `-t, --threads <n>` | worker threads (default: all CPU threads) |
+| `-s, --suffix <text>` | address ends with this (also the positional argument) |
+| `-p, --prefix <text>` | address starts with this, right after `UQ` |
+| `-t, --threads <n>` | worker threads, default: all CPU threads |
 | `--case-sensitive` | exact case match |
-| `--json` | final result as one JSON line |
-| `-o, --out <file>` | save result to this file |
+| `--json` | print the result as one JSON line |
+| `--js` | use the pure-JS engine even if the native core is built |
+| `-o, --out <file>` | where to save the result |
 
-On success it prints the address and the 24 words, and saves everything to `found-<pattern>-<date>.txt` with `chmod 600`. `found-*` is gitignored so seeds never get committed.
+Patterns use base64url characters: `A-Z a-z 0-9 - _`. Every TON address starts with `UQA`, `UQB`, `UQC` or `UQD`, so the first prefix character must be `A`-`D`.
 
-## Performance
+The result is printed and saved to `found-<pattern>-<date>.txt` with `chmod 600`.
 
-Measured on a 4-core / 8-thread laptop (i5-class), PBKDF2-bound:
+## Import into Tonkeeper
 
-| pattern | expected tries (average) | time on this laptop |
-|---|---|---|
-| 3 chars, any case | 32,768 | ~45 min |
-| 3 chars, exact case | 262,144 | ~6 h |
-| 4 chars, any case (`sexy`) | 1,048,576 | ~24 h |
-| 4 chars, exact case (`sexy`) | 16,777,216 | ~16 days |
-| 5 chars, any case | 1,048,576 | ~24 h |
+1. Import the wallet with the 24 words.
+2. Pick the wallet version printed in the result: `v3R1`, `v3R2`, `v4R2` or `W5`.
 
-Notes:
+The same 24 words give a different address in each version, so only the printed one is your vanity address. For everyday use (TON, tokens, NFTs, dapps) the versions behave the same; W5 additionally supports paying fees in USDT and batch transfers.
 
-- Case-insensitive matching (the default) accepts both cases per letter and is 2^letters faster; use `--case-sensitive` for exact.
-- "Expected tries" is an average — variance is high, a hit can come 10x earlier or later.
-- Scaling is linear: run the tool on several machines at once, no coordination needed (independent random streams), first hit wins. A 16-core VPS roughly halves these times.
+## Speed
+
+Measured on a 4-core / 8-thread laptop (Intel i5-10310U): **~166 addresses/s** with the native core, ~38/s in pure JS. Average time to a hit:
+
+| pattern | average tries | native | pure JS |
+|---|---|---|---|
+| 3 chars, any case | 32,768 | ~3 min | ~14 min |
+| 3 chars, exact case | 262,144 | ~26 min | ~1.9 h |
+| 4 chars, any case | 1,048,576 | ~1.7 h | ~7.7 h |
+| 4 chars, exact case | 16,777,216 | ~28 h | ~5 days |
+| 5 chars, any case | 33,554,432 | ~2.3 days | ~10 days |
+
+- Any case (the default) is 2× faster per letter than `--case-sensitive`.
+- These are averages. Luck matters a lot: a hit can come 10× earlier or later.
+- Stopping loses nothing. Every attempt is independent, so you can stop and restart any time, or run on several machines at once.
+- `npm run bench` measures your machine.
+
+## How it works
+
+A TON address is a hash of the wallet contract, which includes the public key. The only way to get a chosen ending is to try random phrases until one fits. Each try costs:
+
+1. **Checksum.** Only ~1 in 256 random phrases is a valid TON mnemonic (`is_basic_seed` in tonlib), checked with PBKDF2-HMAC-SHA512 × 390.
+2. **Key derivation.** PBKDF2-HMAC-SHA512 × 100,000, exactly as in tonlib and Tonkeeper.
+3. **Addresses.** Ed25519 public key, then the StateInit hash of 4 wallet contracts: v3R1, v3R2, v4R2 and W5. This part is nearly free, so one phrase gives 4 chances.
+
+PBKDF2 is 99% of the work. The native core in `native/` runs it for 4 phrases at once in AVX2 registers, with precomputed HMAC pad states, about 4.4× faster than OpenSSL's one-at-a-time PBKDF2. Addresses are matched in the non-bounceable `UQ...` form that Tonkeeper shows.
 
 ## Security
 
-- Phrases are generated from the OS CSPRNG in memory; results are written locally with `0600`.
-- Never trust online vanity generators: whoever generates your phrase knows your private key. This tool is a few hundred lines you can actually read.
-- After importing the phrase into your wallet, delete the `found-*.txt` file.
+- Phrases come from the OS CSPRNG and stay in memory; results are written locally with `0600`.
+- Never use online vanity generators: whoever generates the phrase knows your private key.
+- The code is small enough to read before you trust it.
+- After importing the wallet, delete the `found-*.txt` file. `found-*` is gitignored.
 
 ## Tests
 
 ```bash
-npm i        # dev deps only, used by the reference test
-npm test     # cross-checks vs @ton/crypto, @ton/core, @ton/ton
+npm i       # dev dependencies, only for the reference test
+npm test    # JS and native core vs @ton/crypto, @ton/core, @ton/ton
 npm run bench
 ```
 
 ## License
 
-MIT
+MIT © [ecronx](https://ecronx.t.me)

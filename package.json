@@ -1,15 +1,21 @@
 {
-  "name": "ton-vanity",
+  "name": "efounder",
   "version": "1.0.0",
-  "description": "Generate TON vanity wallet addresses locally. Tonkeeper-compatible 24-word seeds, zero runtime dependencies.",
+  "description": "Vanity TON wallet addresses, generated locally. Tonkeeper-compatible 24-word seeds.",
+  "homepage": "https://github.com/ecronxy/efounder",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ecronxy/efounder.git"
+  },
   "type": "module",
   "bin": {
-    "ton-vanity": "bin/ton-vanity.mjs"
+    "efounder": "bin/efounder.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "scripts": {
+    "build": "node native/build.mjs",
     "test": "node test/reference.test.mjs",
     "bench": "node test/bench.mjs"
   },
@@ -22,6 +28,7 @@
     "seed-phrase",
     "crypto"
   ],
+  "author": "ecronx <ecronxru@gmail.com> (https://ecronx.t.me)",
   "license": "MIT",
   "devDependencies": {
     "@ton/core": "^0.63.1",

@@ -3,3 +3,7 @@ node_modules/
 # search results contain seed phrases — never commit them
 found-*
 *.seed.txt
+
+# native build output
+native/ton-vanity-native
+native/wordlist.h
