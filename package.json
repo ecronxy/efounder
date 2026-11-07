@@ -1,0 +1,31 @@
+{
+  "name": "ton-vanity",
+  "version": "1.0.0",
+  "description": "Generate TON vanity wallet addresses locally. Tonkeeper-compatible 24-word seeds, zero runtime dependencies.",
+  "type": "module",
+  "bin": {
+    "ton-vanity": "bin/ton-vanity.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/reference.test.mjs",
+    "bench": "node test/bench.mjs"
+  },
+  "keywords": [
+    "ton",
+    "vanity",
+    "address",
+    "wallet",
+    "tonkeeper",
+    "seed-phrase",
+    "crypto"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@ton/core": "^0.63.1",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^16.3.0"
+  }
+}

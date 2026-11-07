@@ -1,0 +1,5 @@
+node_modules/
+
+# search results contain seed phrases — never commit them
+found-*
+*.seed.txt
