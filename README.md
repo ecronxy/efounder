@@ -31,11 +31,11 @@ Requires Node.js 18+.
 ```bash
 git clone https://github.com/ecronxy/efounder
 cd efounder
-npm run build      # optional: native AVX2 core, ~4x faster (gcc or clang + OpenSSL headers)
+npm run build      # optional: native AVX2 core, ~4x faster (Linux, gcc or clang + OpenSSL headers)
 npm i -g .         # optional: the `efounder` command everywhere
 ```
 
-Without the native core the CLI falls back to pure JS with zero runtime dependencies.
+Without the native core the CLI falls back to pure JS with zero runtime dependencies. On Windows `npm run build` is skipped and the JS engine is used; for the fast core run eFounder inside WSL.
 
 ## Usage
 
